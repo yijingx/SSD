@@ -115,66 +115,66 @@ class YOLO(nn.Module):
         
         #TODO: define layers
         self.layer1 = nn.Sequential(
-            nn.Conv2d(3,64,3,2),
+            nn.Conv2d(3,64,3,2,padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
         )
         self.layer2 = nn.Sequential(
-            nn.Conv2d(64,64,3,1),
+            nn.Conv2d(64,64,3,1,padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
         )
 
         self.layer3 = nn.Sequential(
-            nn.Conv2d(64,128,3,2),
+            nn.Conv2d(64,128,3,2,padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
         )
         self.layer4 = nn.Sequential(
-            nn.Conv2d(128,128,3,1),
+            nn.Conv2d(128,128,3,1,padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
         )
         self.layer5 = nn.Sequential(
-            nn.Conv2d(128,256,3,2),
+            nn.Conv2d(128,256,3,2,padding=1),
             nn.BatchNorm2d(256),
             nn.ReLU(),
         )
         self.layer6 = nn.Sequential(
-            nn.Conv2d(256,256,3,1),
+            nn.Conv2d(256,256,3,1,padding=1),
             nn.BatchNorm2d(256),
             nn.ReLU(),
         )
         self.layer7 = nn.Sequential(
-            nn.Conv2d(256,512,3,2),
+            nn.Conv2d(256,512,3,2,padding=1),
             nn.BatchNorm2d(512),
             nn.ReLU(),
         )
         self.layer8 = nn.Sequential(
-            nn.Conv2d(512,512,3,1),
+            nn.Conv2d(512,512,3,1,1),
             nn.BatchNorm2d(512),
             nn.ReLU(),
         )
         self.layer9 = nn.Sequential(
-            nn.Conv2d(512,256,3,2),
+            nn.Conv2d(512,256,3,2,1),
             nn.BatchNorm2d(256),
             nn.ReLU(),
         )
         self.layer10 = nn.Sequential(
-            nn.Conv2d(256,256,1,1),
+            nn.Conv2d(256,256,1,1,0),
             nn.BatchNorm2d(256),
             nn.ReLU(),
         )
         self.layer11 = nn.Sequential(
-            nn.Conv2d(256,256,3,2),
+            nn.Conv2d(256,256,3,2,1),
             nn.BatchNorm2d(256),
             nn.ReLU(),
         )
         self.layer_bbox = nn.Sequential(
-            nn.Conv2d(256,4,3,1)
+            nn.Conv2d(256,4,3,1,1)
         )
         self.layer_conf = nn.Sequential(
-            nn.Conv2d(256,4,3,1),
+            nn.Conv2d(256,4,3,1,1),
             nn.Softmax(1)
         )
 
@@ -205,8 +205,8 @@ class YOLO(nn.Module):
         confidence = self.layer_conf(x)
         """ bboxes = np.transpose(bboxes,(1,2,0))
         confidence = np.transpose(bboxes,(1,2,0)) """
-        bboxes = bboxes.permute(1,2,0)
-        confidence = confidence.permute(1,2,0)
+        bboxes = bboxes.permute(0,2,3,1)
+        confidence = confidence.permute(0,2,3,1)
         #remember to apply softmax to confidence! Which dimension should you apply softmax?
         
         #sanity check: print the size/shape of the confidence and bboxes, make sure they are as follows:
