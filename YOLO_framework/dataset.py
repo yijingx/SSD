@@ -40,6 +40,7 @@ def match(ann_box,ann_confidence,cat_id,x_min,y_min,x_max,y_max):
     ann_box[cell_y,cell_x,2] = sqr_width
     ann_box[cell_y,cell_x,3] = sqr_height
     ann_confidence[cell_y,cell_x,cat_id] = 1
+    ann_confidence[cell_y,cell_x,-1] = 0
     return ann_box,ann_confidence
     
     

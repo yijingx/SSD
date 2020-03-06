@@ -31,7 +31,7 @@ args = parser.parse_args()
 class_num = 4 #cat dog person background
 
 num_epochs = 100
-batch_size = 32
+batch_size = 8
 
 
 #Create network

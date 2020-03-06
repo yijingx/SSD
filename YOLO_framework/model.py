@@ -31,23 +31,21 @@ def YOLO_loss(pred_confidence, pred_box, ann_confidence, ann_box):
     #For confidence (class labels), use cross entropy (F.binary_cross_entropy)
     #For box (bounding boxes), use smooth L1 (F.smooth_l1_loss)
     #
-    L_yolo = 0
-    pred_confidence = pred_confidence.view(-1,4)
-    pred_box = ann_box.view(-1,4)
-    ann_confidence = ann_confidence.view(-1,4)
-    ann_box = ann_box.view(-1,4)
-    for i in range(25):
-        pred_conf_idx = pred_confidence[i]
-        pred_box_idx = pred_box[i]
-        ann_conf_idx = ann_confidence[i]
-        ann_box_idx = ann_box[i]
-        L_box_idx = 0
-        if ann_box[i]==3: #empty in the ground truth
-            L_cls_idx = F.binary_cross_entropy(pred_conf_idx,ann_conf_idx)
-            L_box_idx = F.smooth_l1_loss(pred_box_idx,ann_box_idx)
+    pred_confidence = pred_confidence.reshape(-1,4)
+    pred_box = ann_box.reshape(-1,4)
+    ann_confidence = ann_confidence.reshape(-1,4)
+    ann_box = ann_box.reshape(-1,4)
+    N = pred_confidence.shape[0]
+    idx_obj = []
+    idx_empty = []
+    for i in range(N):
+        if ann_confidence[i,3]==1:
+            idx_empty.append(i)
         else:
-            L_cls_idx = 3*F.binary_cross_entropy(pred_conf_idx,ann_conf_idx)
-        L_yolo += L_box_idx+L_cls_idx
+            idx_obj.append(i)
+    L_cls = F.binary_cross_entropy(pred_confidence[idx_obj],ann_confidence[idx_obj])+3*F.binary_cross_entropy(pred_confidence[idx_empty],ann_confidence[idx_empty])
+    L_box = F.smooth_l1_loss(pred_box[idx_obj],ann_box[idx_obj])
+    L_yolo = L_cls+L_box
     return L_yolo
     #Note that you need to consider cells carrying objects and empty cells separately.
     #I suggest you to reshape confidence to [batch_size*5*5, num_of_classes]
@@ -175,7 +173,7 @@ class YOLO(nn.Module):
         )
         self.layer_conf = nn.Sequential(
             nn.Conv2d(256,4,3,1,1),
-            nn.Softmax(1)
+            nn.Softmax()
         )
 
     def forward(self, x):

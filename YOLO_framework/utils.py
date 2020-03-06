@@ -44,7 +44,38 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                     #TODO:
                     #image1: draw ground truth bounding boxes on image1
                     #image2: draw ground truth "default" boxes on image2 (to show that you have assigned the object to the correct cell/cells)
-                    #parameters from pred_box
+                    #parameters from ann_box
+                    ann_rele_x = ann_box[yind,xind,0] #center,reletive
+                    ann_rele_y = ann_box[yind,xind,1]
+                    ann_width = ann_box[yind,xind,2]**2 #sqrt
+                    ann_height = ann_box[yind,xind,3]**2
+                    #calculate the relative position of start and end points
+                    ann_rele_center_x = (ann_rele_x + xind)/size
+                    ann_rele_center_y = (ann_rele_y + yind)/size
+                    ann_rele_start_x = ann_rele_center_x-ann_width/2
+                    ann_rele_start_y = ann_rele_center_y-ann_height/2
+                    ann_rele_end_x = ann_rele_center_y+ann_width/2
+                    ann_rele_end_y = ann_rele_center_y+ann_height/2
+                    #you can use cv2.rectangle as follows:
+                    start_point1 = (int(ann_rele_start_x*image1.shape[1]), int(ann_rele_start_y*image1.shape[0])) #top left corner, x1<x2, y1<y2
+                    end_point1 = (int(ann_rele_end_x*image1.shape[1]), int(ann_rele_end_y*image1.shape[0])) #bottom right corner
+                    color = colors[j] #use red green blue to represent different classes
+                    thickness = 2
+                    cv2.rectangle(image1, start_point1, end_point1, color, thickness)
+                    #image2
+                    start_point2 = (int(xind/size*image1.shape[1]),int(yind/size*image1.shape[0]))
+                    end_point2 = (int((xind+1)/size*image1.shape[1]),int((yind+1)/size*image1.shape[0]))
+                    cv2.rectangle(image2, start_point2, end_point2, color, thickness)
+    
+    #pred
+    for yind in range(size):
+        for xind in range(size):
+            for j in range(class_num):
+                if pred_confidence[yind,xind,j]>0.5:
+                    #TODO:
+                    #image3: draw network-predicted bounding boxes on image3
+                    #image4: draw network-predicted "default" boxes on image4 (to show which cell does your network think that contains an object)
+                    #parameters from ann_box_box
                     pred_rele_x = pred_box[yind,xind,0] #center,reletive
                     pred_rele_y = pred_box[yind,xind,1]
                     pred_width = pred_box[yind,xind,2]**2 #sqrt
@@ -66,37 +97,6 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                     start_point2 = (int(xind/size*image1.shape[1]),int(yind/size*image1.shape[0]))
                     end_point2 = (int((xind+1)/size*image1.shape[1]),int((yind+1)/size*image1.shape[0]))
                     cv2.rectangle(image2, start_point2, end_point2, color, thickness)
-    
-    #pred
-    for yind in range(size):
-        for xind in range(size):
-            for j in range(class_num):
-                if pred_confidence[yind,xind,j]>0.5:
-                    #TODO:
-                    #image3: draw network-predicted bounding boxes on image3
-                    #image4: draw network-predicted "default" boxes on image4 (to show which cell does your network think that contains an object)
-                    #parameters from ann_box_box
-                    ann_rele_x = ann_box[yind,xind,0] #center,reletive
-                    """ ann_rele_y = ann_box[yind,xind,1]
-                    ann_width = ann_box[yind,xind,2]**2 #sqrt
-                    ann_height = ann_box[yind,xind,3]**2
-                    #calculate the relative position of start and end points
-                    ann_rele_center_x = size*ann_rele_x + xind/size
-                    ann_rele_center_y = size*ann_rele_y + yind/size
-                    ann_rele_start_x = ann_rele_x-ann_width/2
-                    ann_rele_start_y = ann_rele_y-ann_height/2
-                    ann_rele_end_x = ann_rele_x+ann_width/2
-                    ann_rele_end_y = ann_rele_y+ann_height/2
-                    #you can use cv2.rectangle as follows:
-                    start_point3 = (int(ann_rele_start_x*image.shape[1]), int(ann_rele_start_y*image.shape[0])) #top left corner, x1<x2, y1<y2
-                    end_point3 = (int(ann_rele_end_x*image.shape[1]), int(ann_rele_end_y*image.shape[0])) #bottom right corner
-                    color = colors[j] #use red green blue to represent different classes
-                    thickness = 2
-                    cv2.rectangle(image3, start_point3, end_point3, color, thickness)
-                    #image2
-                    start_point4 = (int(xind*image.shape[1]),int(yind*image.shape[0]))
-                    end_point4 = (int((xind+1)*image.shape[1]),int((yind+1)*image.shape[0]))
-                    cv2.rectangle(image2, start_point4, end_point4, color, thickness) """
     
     #combine four images into one
     h,w,_ = image1.shape
