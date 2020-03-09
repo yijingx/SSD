@@ -137,6 +137,7 @@ class SSD(nn.Module):
         )
         self.conv1 = nn.Conv2d(256,16,1,1,0)
         self.conv2 = nn.Conv2d(256,16,3,1,1)
+        self.softm = nn.Softmax(2)
 
         
         
@@ -197,7 +198,12 @@ class SSD(nn.Module):
         x_1_ann = x_1_ann.reshape([x_1_box.shape[0],16,1])
         #concatenate
         bboxes = torch.cat((x_100_box,x_25_box,x_9_box,x_1_box),2)
+        bboxes = bboxes.permute((0,2,1))
+        bboxes = bboxes.reshape((bboxes.shape[0],540,4))
         confidence = torch.cat((x_100_ann,x_25_ann,x_9_ann,x_1_ann),2)
+        confidence = confidence.permute((0,2,1))
+        confidence = confidence.reshape((confidence.shape[0],540,4))
+        confidence = self.softm(confidence)
         return confidence,bboxes
 
 
