@@ -43,13 +43,37 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 #TODO:
                 #image1: draw ground truth bounding boxes on image1
                 #image2: draw ground truth "default" boxes on image2 (to show that you have assigned the object to the correct cell/cells)
-                
+                px_start = boxs_default[i,4]
+                py_start = boxs_default[i,5]
+                px_end = boxs_default[i,6]
+                py_end = boxs_default[i,7]
+                dx = ann_box[i,0]
+                dy = ann_box[i,1]
+                dw = ann_box[i,2]
+                dh = ann_box[i,3]
+                gx = px_end*dx+px_start
+                gy = py_end*dy+py_start
+                gw = px_end*np.exp(dw)
+                gh = py_end*np.exp(dh)
+                ann_rele_start_x = gx-gw/2
+                ann_rele_start_y = gy-gh/2
+                ann_rele_end_x = gx+gw/2
+                ann_rele_end_y = gy+gh/2
                 #you can use cv2.rectangle as follows:
                 #start_point = (x1, y1) #top left corner, x1<x2, y1<y2
                 #end_point = (x2, y2) #bottom right corner
                 #color = colors[j] #use red green blue to represent different classes
                 #thickness = 2
                 #cv2.rectangle(image?, start_point, end_point, color, thickness)
+                start_point1 = (int(ann_rele_start_x*image1.shape[1]), int(ann_rele_start_y*image1.shape[0])) #top left corner, x1<x2, y1<y2
+                end_point1 = (int(ann_rele_end_x*image1.shape[1]), int(ann_rele_end_y*image1.shape[0])) #bottom right corner
+                color = colors[j] #use red green blue to represent different classes
+                thickness = 2
+                cv2.rectangle(image1, start_point1, end_point1, color, thickness)
+                #image2
+                start_point2 = (int(px_start*image1.shape[1]),int(py_start*image1.shape[0]))
+                end_point2 = (int(px_end*image1.shape[1]),int(px_end*image1.shape[0]))
+                cv2.rectangle(image2, start_point2, end_point2, color, thickness)
     
     #pred
     for i in range(len(pred_confidence)):
@@ -58,7 +82,7 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 #TODO:
                 #image3: draw network-predicted bounding boxes on image3
                 #image4: draw network-predicted "default" boxes on image4 (to show which cell does your network think that contains an object)
-    
+                pass
     #combine four images into one
     h,w,_ = image1.shape
     image = np.zeros([h*2,w*2,3], np.uint8)
@@ -85,9 +109,25 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, thresh
     #depends on your implementation.
     #if you wish to reuse the visualize_pred function above, you need to return a "suppressed" version of confidence [5,5, num_of_classes].
     #you can also directly return the final bounding boxes and classes, and write a new visualization function for that.
-    
-    
+    l_box = []
+    N = len(confidence_)
+    highest_conf, highest_class = torch.max(confidence_[:,0:2],1) #[num_of_boxes,1],[num_of_boxes,1]
+    highest_conf_ofall, highest_idx = torch.max(highest_conf,0) #1,1
+    while highest_conf_ofall>threshold:
+        confidence_[highest_idx] = [0,0,0,0]
+        #add to new list(box)
+        l_box.append(box_[highest_idx])
+        for i in range(N):
+            x_min = box_[i,0]
+            ious =  iou(boxs_default, box_[i,0],box_[i,1],box_[i,2],box_[i,3])
+            l_idx = (ious>overlap).squeeze().nonzero()
+            confidence_[l_idx] = [0,0,0,0] #remove all the overlap box from confidence_
+        highest_conf, highest_class = torch.max(confidence_[:,0:2],1) #[num_of_boxes,1],[num_of_boxes,1]
+        highest_conf_ofall, highest_idx = torch.max(highest_conf,0) #1,1
+    return l_box
+
     #TODO: non maximum suppression
+    
 
 
 

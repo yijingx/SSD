@@ -31,7 +31,26 @@ def default_box_generator(layers, large_scale, small_scale):
     #where ssize is the corresponding size in "small_scale" and lsize is the corresponding size in "large_scale".
     #for a cell in layer[i], you should use ssize=small_scale[i] and lsize=large_scale[i].
     #the last dimension 8 means each default bounding box has 8 attributes: [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
-    
+    boxes = np.zeros([135,4,8], np.float32)
+    layer_idx = 0
+    for i,grid_num in enumerate(layers): #10,5,3,1
+        ssize = small_scale[i] #box1,w,h
+        lsize = large_scale[i] #box2,w,h
+        lsize_l = lsize*np.sqrt(2) #box3,h box4,w
+        lsize_s = lsize/np.sqrt(2) #box4,w box3,h
+        for center_idx in range(grid_num*grid_num):
+            offset = 1/(grid_num*2)
+            x_cell_idx = center_idx%grid_num
+            y_cell_idx = center_idx//grid_num
+            x_center = x_cell_idx/(grid_num)+offset #para_1
+            y_center = y_cell_idx/(grid_num)+offset #para_2
+            boxes[layer_idx,0] = [x_center, y_center, ssize, ssize, x_center-ssize/2, y_center-ssize/2, x_center+ssize/2, y_center+ssize/2]
+            boxes[layer_idx,1] = [x_center, y_center, lsize, lsize, x_center-lsize/2, y_center-lsize/2, x_center+lsize/2, y_center+lsize/2]
+            boxes[layer_idx,2] = [x_center, y_center, lsize_l, lsize_s, x_center-lsize_l/2, y_center-lsize_s/2, x_center+lsize_l/2, y_center+lsize_s/2]
+            boxes[layer_idx,3] = [x_center, y_center, lsize_s, lsize_l, x_center-lsize_s/2, y_center-lsize_l/2, x_center+lsize_s/2, y_center+lsize_l/2]
+            layer_idx += 1
+    boxes = boxes.reshape(-1,8)
+    boxes = np.clip(boxes,0,1)
     return boxes
 
 
@@ -71,12 +90,44 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     #update ann_box and ann_confidence, with respect to the ious and the default bounding boxes.
     #if a default bounding box and the ground truth bounding box have iou>threshold, then we will say this default bounding box is carrying an object.
     #this default bounding box will be used to update the corresponding entry in ann_box and ann_confidence
-    
+    N = len(boxs_default)
+    for i in range(N):
+        if ious_true[i]: #has an object
+            ann_confidence[i,cat_id] = 1
+            ann_confidence[i,-1] = 0
+            px = boxs_default[i,4]
+            py = boxs_default[i,5]
+            pw = boxs_default[i,6]
+            ph = boxs_default[i,7]
+            gx = (x_min+x_max)/2
+            gy = (y_min+y_max)/2
+            gw = x_max-x_min
+            gh = y_max-y_min
+            ann_box[i,0] = (gx-px)/pw
+            ann_box[i,1] = (gy-py)/ph
+            ann_box[i,2] = np.log(gw/pw)
+            ann_box[i,3] = np.log(gh/ph)
+
     ious_true = np.argmax(ious)
     #TODO:
     #make sure at least one default bounding box is used
     #update ann_box and ann_confidence (do the same thing as above)
-
+    if ious[ious_true]<threshold:
+        ann_confidence[ious_true,cat_id] = 1
+        ann_confidence[ious_true,-1] = 0
+        px = boxs_default[ious_true,4]
+        py = boxs_default[ious_true,5]
+        pw = boxs_default[ious_true,6]
+        ph = boxs_default[ious_true,7]
+        gx = (x_min+x_max)/2
+        gy = (y_min+y_max)/2
+        gw = x_max-x_min
+        gh = y_max-y_min
+        ann_box[ious_true,0] = (gx-px)/pw
+        ann_box[ious_true,1] = (gy-py)/ph
+        ann_box[ious_true,2] = np.log(gw/pw)
+        ann_box[ious_true,3] = np.log(gh/ph)
+    return ann_box,ann_confidence
 
 
 class COCO(torch.utils.data.Dataset):
@@ -96,6 +147,11 @@ class COCO(torch.utils.data.Dataset):
         
         #notice:
         #you can split the dataset into 80% training and 20% testing here, by slicing self.img_names with respect to self.train
+        offset = int(len(self.img_names)*0.8)
+        if self.train:
+            self.img_names = self.img_names[:offset]
+        else:
+            self.img_names = self.img_names[offset:]
 
     def __len__(self):
         return len(self.img_names)
@@ -116,8 +172,33 @@ class COCO(torch.utils.data.Dataset):
         
         #TODO:
         #1. prepare the image [3,320,320], by reading image "img_name" first.
+        image = cv2.imread(img_name)
+        x_shape = image.shape[1]
+        y_shape = image.shape[0]
+        image = cv2.resize(image,(320,320))
+        image = np.transpose(image,(2,0,1))
+        x_scale = 320/x_shape
+        y_scale = 320/y_shape
         #2. prepare ann_box and ann_confidence, by reading txt file "ann_name" first.
+        anno_txt = open(ann_name)
+        anno = anno_txt.readlines()
+        anno_txt.close()
         #3. use the above function "match" to update ann_box and ann_confidence, for each bounding box in "ann_name".
+        for i in range(len(anno)):
+            line = anno[i].split()
+            cat_id = int(line[0])
+            x_start = float(line[1])*x_scale
+            y_start = float(line[2])*y_scale
+            w = float(line[3])*x_scale
+            h = float(line[4])*y_scale
+            #color = colors[c]
+            #img_train = cv2.rectangle(img,(start_x,start_y),(start_x+w,start_y+h),color,2)
+            #crop_img = img_train[start_y+2:start_y+h-2, start_x+2:start_x+w-2]
+            x_min = x_start/320
+            y_min = y_start/320
+            x_max = (x_start+w)/320
+            y_max = (y_start+h)/320
+            ann_box,ann_confidence = match(ann_box,ann_confidence,self.boxs_default,self.threshold,cat_id,x_min,y_min,x_max,y_max)
         #4. Data augmentation. You need to implement random cropping first. You can try adding other augmentations to get better results.
         
         #to use function "match":
