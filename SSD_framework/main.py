@@ -49,6 +49,7 @@ if not args.test:
     
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=True, num_workers=0)
+    
     """
     for i, data in enumerate(dataloader, 0):
         images_, ann_box_, ann_confidence_ = data
@@ -85,11 +86,8 @@ if not args.test:
         #visualize
         pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
         pred_box_ = pred_box[0].detach().cpu().numpy()
-        visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
-        
-        
-        #TEST
-        network.eval()
+        visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default,epoch)
+
         
         # TODO: split the dataset into 80% training and 20% testing
         # use the training set to train and the testing set to evaluate
@@ -111,7 +109,7 @@ if not args.test:
         #visualize
         pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
         pred_box_ = pred_box[0].detach().cpu().numpy()
-        visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+        visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default,epoch)
         
         #optional: compute F1
         #F1score = 2*precision*recall/np.maximum(precision+recall,1e-8)
