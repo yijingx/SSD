@@ -6,7 +6,7 @@ from dataset import iou
 colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
 #use red green blue to represent different classes
 
-def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_box, image_, boxs_default,epoch = 500):
+def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_box, image_, boxs_default,epoch = 500,save=False):
     #input:
     #windowname      -- the name of the window to display the images
     #pred_confidence -- the predicted class labels from SSD, [num_of_boxes, num_of_classes]
@@ -129,7 +129,8 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     cv2.waitKey(1)
     #if you are using a server, you may not be able to display the image.
     #in that case, please save the image using cv2.imwrite and check the saved image for visualization.
-    cv2.imwrite("./visual_res/%s_%d.jpg"%(windowname,epoch),image)
+    if save==True:
+        cv2.imwrite("./visual_res/%s_%d.jpg"%(windowname,epoch),image)
 
 
 

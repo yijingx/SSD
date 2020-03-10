@@ -29,7 +29,7 @@ def SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box):
     #TODO: write a loss function for SSD
     #
     #For confidence (class labels), use cross entropy (F.binary_cross_entropy)
-    #For box (bounding boxes), use smooth L1 (F.smooth_l1_loss)
+    #For box (bounding boxes), use smooth L1 (F.smooth_l1_loss) 
     #
     #Note that you need to consider cells carrying objects and empty cells separately.
     #I suggest you to reshape confidence to [batch_size*num_of_boxes, num_of_classes]
@@ -73,6 +73,9 @@ class SSD(nn.Module):
             nn.Conv2d(64,64,3,1,padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
+            nn.Conv2d(64,64,3,1,padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
         )
 
         self.layer3 = nn.Sequential(
@@ -81,6 +84,9 @@ class SSD(nn.Module):
             nn.ReLU(),
         )
         self.layer4 = nn.Sequential(
+            nn.Conv2d(128,128,3,1,padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
             nn.Conv2d(128,128,3,1,padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
@@ -94,6 +100,9 @@ class SSD(nn.Module):
             nn.Conv2d(256,256,3,1,padding=1),
             nn.BatchNorm2d(256),
             nn.ReLU(),
+            nn.Conv2d(256,256,3,1,padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
         )
         self.layer7 = nn.Sequential(
             nn.Conv2d(256,512,3,2,padding=1),
@@ -101,6 +110,9 @@ class SSD(nn.Module):
             nn.ReLU(),
         )
         self.layer8 = nn.Sequential(
+            nn.Conv2d(512,512,3,1,1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
             nn.Conv2d(512,512,3,1,1),
             nn.BatchNorm2d(512),
             nn.ReLU(),
@@ -114,29 +126,35 @@ class SSD(nn.Module):
             nn.Conv2d(256,256,1,1,0),
             nn.BatchNorm2d(256),
             nn.ReLU(),
-        )
-        self.layer11 = nn.Sequential(
             nn.Conv2d(256,256,3,2,1),
             nn.BatchNorm2d(256),
             nn.ReLU(),
         )
-        self.layer_a1 = nn.Sequential(
+        self.layer11 = nn.Sequential(
             nn.Conv2d(256,256,1,1,0),
             nn.BatchNorm2d(256),
             nn.ReLU(),
-        )
-        self.layer_a2 = nn.Sequential(
-            nn.Conv2d(256,256,3,2,1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-        )
-        self.layer_a3 = nn.Sequential(
             nn.Conv2d(256,256,3,1,0),
             nn.BatchNorm2d(256),
             nn.ReLU(),
         )
-        self.conv1 = nn.Conv2d(256,16,1,1,0)
-        self.conv2 = nn.Conv2d(256,16,3,1,1)
+
+        self.layer12 = nn.Sequential(
+            nn.Conv2d(256,256,1,1,0),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            nn.Conv2d(256,256,3,1,0),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+        )
+        self.conv_b_1 = nn.Conv2d(256,16,1,1,0)
+        self.conv_c_1 = nn.Conv2d(256,16,1,1,0)
+        self.conv_b_100 = nn.Conv2d(256,16,3,1,1)
+        self.conv_c_100 = nn.Conv2d(256,16,3,1,1)
+        self.conv_b_25 = nn.Conv2d(256,16,3,1,1)
+        self.conv_c_25 = nn.Conv2d(256,16,3,1,1)
+        self.conv_b_9 = nn.Conv2d(256,16,3,1,1)
+        self.conv_c_9 = nn.Conv2d(256,16,3,1,1)
         self.softm = nn.Softmax(2)
 
         
@@ -157,44 +175,37 @@ class SSD(nn.Module):
         x = x.float()
         x = self.layer1(x)
         x = self.layer2(x)
-        x = self.layer2(x)
         x = self.layer3(x)
-        x = self.layer4(x)
         x = self.layer4(x)
         x = self.layer5(x)
         x = self.layer6(x)
-        x = self.layer6(x)
         x = self.layer7(x)
-        x = self.layer8(x)
         x = self.layer8(x)
         x = self.layer9(x)
         # divide into different size
         #100
         x_100 = x
-        x_100_box = self.conv2(x_100)
+        x_100_box = self.conv_b_100(x_100)
         x_100_box = x_100_box.reshape([x_100_box.shape[0],16,100])
-        x_100_ann = self.conv2(x_100)
+        x_100_ann = self.conv_c_100(x_100)
         x_100_ann = x_100_ann.reshape([x_100_ann.shape[0],16,100])
         #25
-        x_25 = self.layer_a1(x_100)
-        x_25 = self.layer_a2(x_25)
-        x_25_box = self.conv2(x_25)
+        x_25 = self.layer10(x_100)
+        x_25_box = self.conv_b_25(x_25)
         x_25_box = x_25_box.reshape([x_25_box.shape[0],16,25])
-        x_25_ann = self.conv2(x_25)
+        x_25_ann = self.conv_c_25(x_25)
         x_25_ann = x_25_ann.reshape([x_25_ann.shape[0],16,25])
         #9
-        x_9 = self.layer_a1(x_25)
-        x_9 = self.layer_a3(x_9)
-        x_9_box = self.conv2(x_9)
+        x_9 = self.layer11(x_25)
+        x_9_box = self.conv_b_9(x_9)
         x_9_box = x_9_box.reshape([x_9_box.shape[0],16,9])
-        x_9_ann = self.conv2(x_9)
+        x_9_ann = self.conv_c_9(x_9)
         x_9_ann = x_9_ann.reshape([x_9_ann.shape[0],16,9])
         #1
-        x_1 = self.layer_a1(x_9)
-        x_1 = self.layer_a3(x_1)
-        x_1_box = self.conv1(x_1)
+        x_1 = self.layer12(x_9)
+        x_1_box = self.conv_b_1(x_1)
         x_1_box = x_1_box.reshape([x_1_box.shape[0],16,1])
-        x_1_ann = self.conv1(x_1)
+        x_1_ann = self.conv_c_1(x_1)
         x_1_ann = x_1_ann.reshape([x_1_box.shape[0],16,1])
         #concatenate
         bboxes = torch.cat((x_100_box,x_25_box,x_9_box,x_1_box),2)

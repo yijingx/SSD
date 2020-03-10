@@ -94,7 +94,7 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     for i in range(N):
         if ious_true[i]: #has an object
             ann_confidence[i,cat_id] = 1
-            ann_confidence[i,-1] = 0
+            ann_confidence[i,3] = 0
             #boxdefault:px,py,pw,ph
             px_start = boxs_default[i,4]
             py_start = boxs_default[i,5]
