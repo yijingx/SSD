@@ -60,14 +60,11 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 gy = ph*dy+py   
                 gw = pw*np.exp(dw)
                 gh = ph*np.exp(dh)
+                #cv2.rectangle(image?, start_point, end_point, color, thickness)
                 ann_rele_start_x = gx-gw/2
                 ann_rele_start_y = gy-gh/2
                 ann_rele_end_x = gx+gw/2
-                ann_rele_end_y = gy+gh/2            
-                #end_point = (x2, y2) #bottom right corner
-                #color = colors[j] #use red green blue to represent different classes
-                #thickness = 2
-                #cv2.rectangle(image?, start_point, end_point, color, thickness)
+                ann_rele_end_y = gy+gh/2
                 start_point1 = (int(ann_rele_start_x*image1.shape[1]), int(ann_rele_start_y*image1.shape[0])) #top left corner, x1<x2, y1<y2
                 end_point1 = (int(ann_rele_end_x*image1.shape[1]), int(ann_rele_end_y*image1.shape[0])) #bottom right corner
                 color = colors[j] #use red green blue to represent different classes
@@ -135,7 +132,7 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
 
 
 
-def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, threshold=0.5):
+def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, threshold=0.02):
     #input:
     #confidence_  -- the predicted class labels from SSD, [num_of_boxes, num_of_classes]
     #box_         -- the predicted bounding boxes from SSD, [num_of_boxes, 4]
@@ -148,21 +145,25 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, thresh
     #if you wish to reuse the visualize_pred function above, you need to return a "suppressed" version of confidence [5,5, num_of_classes].
     #you can also directly return the final bounding boxes and classes, and write a new visualization function for that.
     l_box = []
+    l_conf = []
     N = len(confidence_)
-    highest_conf, highest_class = torch.max(confidence_[:,0:2],1) #[num_of_boxes,1],[num_of_boxes,1]
-    highest_conf_ofall, highest_idx = torch.max(highest_conf,0) #1,1
+    highest_conf = np.amax(confidence_[:,0:2],axis = 1) #[num_of_boxes,1],[num_of_boxes,1]
+    highest_conf_ofall = np.max(highest_conf) 
+    highest_idx = np.argmax(highest_conf)
     while highest_conf_ofall>threshold:
         confidence_[highest_idx] = [0,0,0,0]
         #add to new list(box)
         l_box.append(box_[highest_idx])
+        l_conf.append(confidence_[highest_idx])
         for i in range(N):
             x_min = box_[i,0]
             ious =  iou(boxs_default, box_[i,0],box_[i,1],box_[i,2],box_[i,3])
             l_idx = (ious>overlap).squeeze().nonzero()
             confidence_[l_idx] = [0,0,0,0] #remove all the overlap box from confidence_
-        highest_conf, highest_class = torch.max(confidence_[:,0:2],1) #[num_of_boxes,1],[num_of_boxes,1]
-        highest_conf_ofall, highest_idx = torch.max(highest_conf,0) #1,1
-    return l_box
+        highest_conf = np.amax(confidence_[:,0:2],axis = 1) #[num_of_boxes,1],[num_of_boxes,1]
+        highest_conf_ofall = np.max(highest_conf) 
+        highest_idx = np.argmax(highest_conf)
+    return l_conf,l_box
 
     #TODO: non maximum suppression
     

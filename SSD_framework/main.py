@@ -46,15 +46,18 @@ cudnn.benchmark = True
 if not args.test:
     dataset = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = True, image_size=320)
     dataset_test = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = False, image_size=320)
+    dataset_aug = Aug("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = True, image_size=320)
     
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=True, num_workers=0)
+    dataloader_aug = torch.utils.data.DataLoader(dataset_aug, batch_size=batch_size, shuffle=True, num_workers=0)
+
     
-    """
-    for i, data in enumerate(dataloader, 0):
-        images_, ann_box_, ann_confidence_ = data
-        visualize_pred("test", ann_confidence_[0].numpy(), ann_box_[0].numpy(), ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(),boxs_default) 
-    """
+    
+    # for i, data in enumerate(dataloader_aug, 0):
+    #     images_, ann_box_, ann_confidence_ = data
+    #     visualize_pred("test", ann_confidence_[0].numpy(), ann_box_[0].numpy(), ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(),boxs_default) 
+    
     optimizer = optim.Adam(network.parameters(), lr = 1e-4)
     #feel free to try other optimizers and parameters.
     
@@ -67,6 +70,21 @@ if not args.test:
         avg_loss = 0
         avg_count = 0
         for i, data in enumerate(dataloader, 0):
+            images_, ann_box_, ann_confidence_ = data
+            images = images_.cuda()
+            ann_box = ann_box_.cuda()
+            ann_confidence = ann_confidence_.cuda()
+
+            optimizer.zero_grad()
+            pred_confidence, pred_box = network(images)
+            loss_net = SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box)
+            loss_net.backward()
+            optimizer.step()
+            
+            avg_loss += loss_net.data
+            avg_count += 1
+        
+        for i, data in enumerate(dataloader_aug, 0):
             images_, ann_box_, ann_confidence_ = data
             images = images_.cuda()
             ann_box = ann_box_.cuda()
@@ -130,22 +148,20 @@ else:
     network.eval()
     
     for i, data in enumerate(dataloader_test, 0):
-        images_, ann_box_, ann_confidence_ = data
+        images_ = data
         images = images_.cuda()
-        ann_box = ann_box_.cuda()
-        ann_confidence = ann_confidence_.cuda()
-
+        
         pred_confidence, pred_box = network(images)
 
         pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
         pred_box_ = pred_box[0].detach().cpu().numpy()
         
-        #pred_confidence_,pred_box_ = non_maximum_suppression(pred_confidence_,pred_box_,boxs_default)
+        pred_confidence_,pred_box_ = non_maximum_suppression(pred_confidence_,pred_box_,boxs_default)
         
         #TODO: save predicted bounding boxes and classes to a txt file.
         #you will need to submit those files for grading this assignment
         
-        visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+        visualize_pred("test", pred_confidence_, pred_box_, pred_confidence_, pred_box_, images_[0].numpy(), boxs_default)
         cv2.waitKey(1000)
 
 

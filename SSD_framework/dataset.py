@@ -11,6 +11,7 @@ import torch.nn.functional as F
 import numpy as np
 import os
 import cv2
+import random
 
 #generate default bounding boxes
 def default_box_generator(layers, large_scale, small_scale):
@@ -148,6 +149,7 @@ class COCO(torch.utils.data.Dataset):
     def __init__(self, imgdir, anndir, class_num, boxs_default, train = True, image_size=320):
         self.train = train
         self.imgdir = imgdir
+        
         self.anndir = anndir
         self.class_num = class_num
         
@@ -182,7 +184,10 @@ class COCO(torch.utils.data.Dataset):
         ann_confidence[:,-1] = 1 #the default class for all cells is set to "background"
         
         img_name = self.imgdir+self.img_names[index]
-        ann_name = self.anndir+self.img_names[index][:-3]+"txt"
+        if self.anndir == "data/test/annotations/":
+            pass
+        else:
+            ann_name = self.anndir+self.img_names[index][:-3]+"txt"
         
         #TODO:
         #1. prepare the image [3,320,320], by reading image "img_name" first.
@@ -193,7 +198,10 @@ class COCO(torch.utils.data.Dataset):
         image = np.transpose(image,(2,0,1))
         x_scale = 320/x_shape
         y_scale = 320/y_shape
+        if self.anndir == "data/test/annotations/":
+            return image
         #2. prepare ann_box and ann_confidence, by reading txt file "ann_name" first.
+
         anno_txt = open(ann_name)
         anno = anno_txt.readlines()
         anno_txt.close()
@@ -220,7 +228,89 @@ class COCO(torch.utils.data.Dataset):
         #where [x_min,y_min,x_max,y_max] is from the ground truth bounding box, normalized with respect to the width or height of the image.
         
         #note: please make sure x_min,y_min,x_max,y_max are normalized with respect to the width or height of the image.
-        #For example, point (x=100, y=200) in a image with (width=1000, height=500) will be normalized to (x/width=0.1,y/height=0.4)
-        
-        
+        #For example, point (x=100, y=200) in a image with (width=1000, height=500) will be normalized to (x/width=0.1,y/height=0.4)            
         return image, ann_box, ann_confidence
+
+class Aug(torch.utils.data.Dataset):
+    def __init__(self, imgdir, anndir, class_num, boxs_default, train = True, image_size=320):
+        self.train = train
+        self.imgdir = imgdir
+        self.anndir = anndir
+        self.class_num = class_num
+        
+        #overlap threshold for deciding whether a bounding box carries an object or no
+        self.threshold = 0.5
+        self.boxs_default = boxs_default
+        self.box_num = len(self.boxs_default)
+        
+        self.img_names = os.listdir(self.imgdir)
+        self.image_size = image_size
+        
+
+    def __len__(self):
+        return len(self.img_names)
+
+    def __getitem__(self, index):
+        ann_box = np.zeros([self.box_num,4], np.float32) #bounding boxes
+        ann_confidence = np.zeros([self.box_num,self.class_num], np.float32) #one-hot vectors
+        #one-hot vectors with four classes
+        #[1,0,0,0] -> cat
+        #[0,1,0,0] -> dog
+        #[0,0,1,0] -> person
+        #[0,0,0,1] -> background
+        
+        ann_confidence[:,-1] = 1 #the default class for all cells is set to "background"
+        
+        img_name = self.imgdir+self.img_names[index]
+        ann_name = self.anndir+self.img_names[index][:-3]+"txt"
+        
+        #TODO:
+        #1. prepare the image [3,320,320], by reading image "img_name" first.
+        image = cv2.imread(img_name)
+        x_shape0 = image.shape[1]
+        y_shape0 = image.shape[0]
+        #2. prepare ann_box and ann_confidence, by reading txt file "ann_name" first.
+        anno_txt = open(ann_name)
+        anno = anno_txt.readlines()
+        anno_txt.close()
+        #3. use the above function "match" to update ann_box and ann_confidence, for each bounding box in "ann_name".
+        crop_x_min,crop_y_min = x_shape0,y_shape0
+        crop_x_max,crop_y_max = 0,0
+        for i in range(len(anno)):
+            line = anno[i].split()
+            cat_id = int(line[0])
+            x_start = float(line[1])
+            y_start = float(line[2])
+            w = float(line[3])
+            h = float(line[4])
+            x_end = x_start+w
+            y_end = y_start+h
+            # looking all the boxes, finding the boudary
+            crop_x_min = min(x_start,crop_x_min)
+            crop_x_max = max(x_end,crop_x_max)
+            crop_y_min = min(y_start,crop_y_min)
+            crop_y_max = max(y_end,crop_y_max)
+        crop_x_start = random.uniform(0, int(crop_x_min))
+        crop_y_start = random.uniform(0,int(crop_y_min))
+        crop_x_end = random.uniform(int(crop_x_max),int(x_shape0))
+        crop_y_end = random.uniform(int(crop_y_max),int(y_shape0))
+        I = image[int(crop_y_start):int(crop_y_end),int(crop_x_start):int(crop_x_end),:]
+        #x_shape1 = I.shape[1]
+        #y_shape1 = I.shape[0]
+        I = cv2.resize(I,(320,320))
+        I = np.transpose(I,(2,0,1))
+        for i in range(len(anno)):
+            line = anno[i].split()
+            cat_id = int(line[0])
+            x_start = float(line[1])
+            y_start = float(line[2])
+            w = float(line[3])
+            h = float(line[4])
+            x_end = x_start+w
+            y_end = y_start+h
+            x_min = (x_start-crop_x_start)/x_shape0
+            y_min = (y_start-crop_y_start)/y_shape0
+            x_max = (x_end)/x_shape0
+            y_max = (y_end)/y_shape0
+            ann_box,ann_confidence = match(ann_box,ann_confidence,self.boxs_default,self.threshold,cat_id,x_min,y_min,x_max,y_max)     
+        return I, ann_box, ann_confidence
