@@ -95,14 +95,21 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
         if ious_true[i]: #has an object
             ann_confidence[i,cat_id] = 1
             ann_confidence[i,-1] = 0
-            px = boxs_default[i,4]
-            py = boxs_default[i,5]
-            pw = boxs_default[i,6]
-            ph = boxs_default[i,7]
+            #boxdefault:px,py,pw,ph
+            px_start = boxs_default[i,4]
+            py_start = boxs_default[i,5]
+            px_end = boxs_default[i,6]
+            py_end = boxs_default[i,7]
+            pw = px_end-px_start
+            ph = py_end-py_start
+            px = (px_start+px_end)/2
+            py = (py_start+py_end)/2
+            #ground truth
             gx = (x_min+x_max)/2
             gy = (y_min+y_max)/2
             gw = x_max-x_min
             gh = y_max-y_min
+            #ann_box tranformed tx,ty,tw,th
             ann_box[i,0] = (gx-px)/pw
             ann_box[i,1] = (gy-py)/ph
             ann_box[i,2] = np.log(gw/pw)
@@ -115,18 +122,25 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     if ious[ious_true]<threshold:
         ann_confidence[ious_true,cat_id] = 1
         ann_confidence[ious_true,-1] = 0
-        px = boxs_default[ious_true,4]
-        py = boxs_default[ious_true,5]
-        pw = boxs_default[ious_true,6]
-        ph = boxs_default[ious_true,7]
+        #boxdefault:px,py,pw,ph
+        px_start = boxs_default[i,4]
+        py_start = boxs_default[i,5]
+        px_end = boxs_default[i,6]
+        py_end = boxs_default[i,7]
+        pw = px_end-px_start
+        ph = py_end-py_start
+        px = (px_start+px_end)/2
+        py = (py_start+py_end)/2
+        #ground truth
         gx = (x_min+x_max)/2
         gy = (y_min+y_max)/2
         gw = x_max-x_min
         gh = y_max-y_min
-        ann_box[ious_true,0] = (gx-px)/pw
-        ann_box[ious_true,1] = (gy-py)/ph
-        ann_box[ious_true,2] = np.log(gw/pw)
-        ann_box[ious_true,3] = np.log(gh/ph)
+        #ann_box tranformed tx,ty,tw,th
+        ann_box[i,0] = (gx-px)/pw
+        ann_box[i,1] = (gy-py)/ph
+        ann_box[i,2] = np.log(gw/pw)
+        ann_box[i,3] = np.log(gh/ph)
     return ann_box,ann_confidence
 
 

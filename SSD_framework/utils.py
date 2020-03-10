@@ -48,12 +48,16 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 py_end = boxs_default[i,7]
                 pw = px_end-px_start
                 ph = py_end-py_start
+                px = (px_start+px_end)/2
+                py = (py_start+py_end)/2
+                # ann_box tranformed tx,ty,tw,th
                 dx = ann_box[i,0]
                 dy = ann_box[i,1]
                 dw = ann_box[i,2]
                 dh = ann_box[i,3]
-                gx = pw*dx+px_start
-                gy = ph*dy+py_start   
+                # transformed again
+                gx = pw*dx+px
+                gy = ph*dy+py   
                 gw = pw*np.exp(dw)
                 gh = ph*np.exp(dh)
                 ann_rele_start_x = gx-gw/2
@@ -87,14 +91,19 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 py_end = boxs_default[i,7]
                 pw = px_end-px_start
                 ph = py_end-py_start
+                px = (px_start+px_end)/2
+                py = (py_start+py_end)/2
+                #
                 dx_pred = pred_box[i,0]
                 dy_pred = pred_box[i,1]
                 dw_pred = pred_box[i,2]
                 dh_pred = pred_box[i,3]
-                gx_= pw*dx_pred+px_start
-                gy = ph*dy_pred+py_start
+                #
+                gx_= pw*dx_pred+px
+                gy = ph*dy_pred+py
                 gw = pw*np.exp(dw_pred)
                 gh = ph*np.exp(dh_pred)
+                #
                 ann_rele_start_x = gx-gw/2
                 ann_rele_start_y = gy-gh/2
                 ann_rele_end_x = gx+gw/2

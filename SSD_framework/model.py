@@ -37,7 +37,7 @@ def SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box):
     #Then you need to figure out how you can get the indices of all cells carrying objects,
     #and use confidence[indices], box[indices] to select those cells.
     pred_confidence = pred_confidence.reshape(-1,4)
-    pred_box = ann_box.reshape(-1,4)
+    pred_box = pred_box.reshape(-1,4)
     ann_confidence = ann_confidence.reshape(-1,4)
     ann_box = ann_box.reshape(-1,4)
     N = pred_confidence.shape[0]
