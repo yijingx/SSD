@@ -333,8 +333,8 @@ class Aug(torch.utils.data.Dataset):
         crop_x_end = random.uniform(int(crop_x_max),int(x_shape0))
         crop_y_end = random.uniform(int(crop_y_max),int(y_shape0))
         I = image[int(crop_y_start):int(crop_y_end),int(crop_x_start):int(crop_x_end),:]
-        #x_shape1 = I.shape[1]
-        #y_shape1 = I.shape[0]
+        x_shape1 = I.shape[1]
+        y_shape1 = I.shape[0]
         I = cv2.resize(I,(320,320))
         I = np.transpose(I,(2,0,1))
         for i in range(len(anno)):
@@ -344,11 +344,11 @@ class Aug(torch.utils.data.Dataset):
             y_start = float(line[2])
             w = float(line[3])
             h = float(line[4])
-            x_end = x_start+w
-            y_end = y_start+h
-            x_min = (x_start-crop_x_start)/x_shape0
-            y_min = (y_start-crop_y_start)/y_shape0
-            x_max = (x_end)/x_shape0
-            y_max = (y_end)/y_shape0
+            x_end = x_start+w-crop_x_start
+            y_end = y_start+h-crop_y_start
+            x_min = (x_start-crop_x_start)/x_shape1
+            y_min = (y_start-crop_y_start)/y_shape1
+            x_max = (x_end)/x_shape1
+            y_max = (y_end)/y_shape1
             ann_box,ann_confidence = match(ann_box,ann_confidence,self.boxs_default,self.threshold,cat_id,x_min,y_min,x_max,y_max)     
         return I, ann_box, ann_confidence

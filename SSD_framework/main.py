@@ -55,9 +55,9 @@ if not args.test:
 
     
     
-    # for i, data in enumerate(dataloader_aug, 0):
-    #     images_, ann_box_, ann_confidence_ = data
-    #     visualize_pred("test", ann_confidence_[0].numpy(), ann_box_[0].numpy(), ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(),boxs_default) 
+    for i, data in enumerate(dataloader_aug, 0):
+        images_, ann_box_, ann_confidence_ = data
+        visualize_pred("test", ann_confidence_[0].numpy(), ann_box_[0].numpy(), ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(),boxs_default) 
     
     optimizer = optim.Adam(network.parameters(), lr = 1e-4)
     #feel free to try other optimizers and parameters.
