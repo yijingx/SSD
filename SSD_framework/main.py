@@ -34,6 +34,7 @@ num_epochs = 100
 batch_size = 16
 
 
+
 boxs_default = default_box_generator([10,5,3,1], [0.2,0.4,0.6,0.8], [0.1,0.3,0.5,0.7])
 
 
@@ -156,12 +157,12 @@ else:
         pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
         pred_box_ = pred_box[0].detach().cpu().numpy()
         
-        pred_confidence_,pred_box_ = non_maximum_suppression(pred_confidence_,pred_box_,boxs_default)
+        pred_confidence_NMS,pred_box_NMS = non_maximum_suppression(pred_confidence_.copy(),pred_box_.copy(),boxs_default)
         
         #TODO: save predicted bounding boxes and classes to a txt file.
         #you will need to submit those files for grading this assignment
         
-        visualize_pred("test", pred_confidence_, pred_box_, pred_confidence_, pred_box_, images_[0].numpy(), boxs_default)
+        visualize_pred("test", pred_confidence_NMS, pred_box_NMS, pred_confidence_, pred_box_, images_[0].numpy(), boxs_default)
         cv2.waitKey(1000)
 
 

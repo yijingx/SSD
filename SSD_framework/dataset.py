@@ -72,6 +72,44 @@ def iou(boxs_default, x_min,y_min,x_max,y_max):
     union = area_a + area_b - inter
     return inter/np.maximum(union,1e-8)
 
+def iou_NMS(boxs_, highest_idx,boxes_default):
+    #input:
+    #boxs_ [540,4] find ious with the highest confidence box(x_min,y_min,x_max,y_max)
+
+    #transform parameter px,py,pw,ph
+    px_min = boxes_default[:,4]
+    py_min = boxes_default[:,5]
+    px_max = boxes_default[:,6]
+    py_max = boxes_default[:,7]
+    px = (px_min+px_max)/2
+    py = (py_min+py_max)/2
+    pw = px_max-px_min
+    ph = py_max-py_min
+    #transform parameter px,py,pw,ph (end)
+    #extract max,min position of boxs_
+    tx = boxs_[:,0] #center x
+    ty = boxs_[:,1]
+    tw = boxs_[:,2] #center y
+    th = boxs_[:,3]
+    gx = pw*tx+px
+    gy = py*ty+py
+    gw = pw*np.exp(tw)
+    gh = ph*np.exp(th)
+    box_minx = gx-gw/2
+    box_maxx = gx+gw/2
+    box_miny = gy-gh/2
+    box_maxy = gy+gh/2
+    # extract the highest row
+    highest_minx = box_minx[highest_idx]
+    highest_maxx = box_maxx[highest_idx]
+    highest_miny = box_miny[highest_idx]
+    highest_maxy = box_maxy[highest_idx]
+    inter = np.maximum(np.minimum(box_maxx,highest_maxx)-np.maximum(box_minx,highest_minx),0)*np.maximum(np.minimum(box_maxy,highest_maxy)-np.maximum(box_miny,highest_miny),0)
+    area_a = (box_maxx-box_minx)*(box_maxy-box_miny)
+    area_b = (highest_maxx-highest_minx)*(highest_maxy-highest_miny)
+    union = area_a + area_b - inter
+    return inter/np.maximum(union,1e-8)
+
 
 
 def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max,y_max):

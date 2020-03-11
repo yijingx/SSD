@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from dataset import iou
+from dataset import iou_NMS
 
 
 colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
@@ -96,7 +97,7 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 dw_pred = pred_box[i,2]
                 dh_pred = pred_box[i,3]
                 #
-                gx_= pw*dx_pred+px
+                gx = pw*dx_pred+px
                 gy = ph*dy_pred+py
                 gw = pw*np.exp(dw_pred)
                 gh = ph*np.exp(dh_pred)
@@ -132,7 +133,7 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
 
 
 
-def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, threshold=0.02):
+def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.3, threshold=0.5):
     #input:
     #confidence_  -- the predicted class labels from SSD, [num_of_boxes, num_of_classes]
     #box_         -- the predicted bounding boxes from SSD, [num_of_boxes, 4]
@@ -144,26 +145,30 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, thresh
     #depends on your implementation.
     #if you wish to reuse the visualize_pred function above, you need to return a "suppressed" version of confidence [5,5, num_of_classes].
     #you can also directly return the final bounding boxes and classes, and write a new visualization function for that.
-    l_box = []
-    l_conf = []
+    l_box = np.zeros_like(confidence_)
+    l_conf = np.zeros_like(confidence_)
     N = len(confidence_)
     highest_conf = np.amax(confidence_[:,0:2],axis = 1) #[num_of_boxes,1],[num_of_boxes,1]
     highest_conf_ofall = np.max(highest_conf) 
     highest_idx = np.argmax(highest_conf)
     while highest_conf_ofall>threshold:
-        confidence_[highest_idx] = [0,0,0,0]
         #add to new list(box)
-        l_box.append(box_[highest_idx])
-        l_conf.append(confidence_[highest_idx])
-        for i in range(N):
-            x_min = box_[i,0]
-            ious =  iou(boxs_default, box_[i,0],box_[i,1],box_[i,2],box_[i,3])
-            l_idx = (ious>overlap).squeeze().nonzero()
-            confidence_[l_idx] = [0,0,0,0] #remove all the overlap box from confidence_
+        #l_box.append(box_[highest_idx])
+        #l_conf.append(confidence_[highest_idx].copy())
+        l_box[highest_idx] = box_[highest_idx]
+        l_conf[highest_idx] = confidence_[highest_idx]
+        confidence_[highest_idx] = [0,0,0,0]
+        ious =  iou_NMS(box_, highest_idx,boxs_default)
+        l_idx = (ious>overlap).squeeze().nonzero()
+        confidence_[l_idx] = [0,0,0,0] #remove all the overlap box from confidence_
         highest_conf = np.amax(confidence_[:,0:2],axis = 1) #[num_of_boxes,1],[num_of_boxes,1]
         highest_conf_ofall = np.max(highest_conf) 
         highest_idx = np.argmax(highest_conf)
-    return l_conf,l_box
+    box_NMS = np.array(l_box)
+    box_NMS = box_NMS.reshape((-1,4))
+    conf_NMS = np.array(l_conf)
+    conf_NMS = conf_NMS.reshape((-1,4))
+    return conf_NMS, box_NMS
 
     #TODO: non maximum suppression
     
