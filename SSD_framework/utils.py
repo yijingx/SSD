@@ -133,7 +133,7 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
 
 
 
-def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.3, threshold=0.5):
+def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.1, threshold=0.01):
     #input:
     #confidence_  -- the predicted class labels from SSD, [num_of_boxes, num_of_classes]
     #box_         -- the predicted bounding boxes from SSD, [num_of_boxes, 4]
@@ -149,7 +149,8 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.3, thresh
     l_conf = np.zeros_like(confidence_)
     NMS_idx = []
     N = len(confidence_)
-    highest_conf = np.amax(confidence_[:,0:2],axis = 1) #[num_of_boxes,1],[num_of_boxes,1]
+    #obj_conf = confidence_[:,0:2]
+    highest_conf = np.amax(confidence_[:,0:3],axis = 1) #[num_of_boxes,1],[num_of_boxes,1]
     highest_conf_ofall = np.max(highest_conf) 
     highest_idx = np.argmax(highest_conf)
     while highest_conf_ofall>threshold:
@@ -161,7 +162,7 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.3, thresh
         ious =  iou_NMS(box_, highest_idx,boxs_default)
         l_idx = (ious>overlap).squeeze().nonzero()
         confidence_[l_idx] = [0,0,0,0] #remove all the overlap box from confidence_
-        highest_conf = np.amax(confidence_[:,0:2],axis = 1) #[num_of_boxes,1],[num_of_boxes,1]
+        highest_conf = np.amax(confidence_[:,0:3],axis = 1) #[num_of_boxes,1],[num_of_boxes,1]
         highest_conf_ofall = np.max(highest_conf) 
         highest_idx = np.argmax(highest_conf)
     box_NMS = np.array(l_box)
@@ -179,7 +180,7 @@ def compute_pos(l_idx,box_NMS,conf_NMS,boxes_default):
     #transform parameter px,py,pw,ph
     for i in range(len(l_idx)):
         idx = l_idx[i]
-        c_id = np.argmax(conf_NMS[idx,0:2])
+        c_id = np.argmax(conf_NMS[idx,0:3])
         px_min = boxes_default[idx,4]
         py_min = boxes_default[idx,5]
         px_max = boxes_default[idx,6]
@@ -202,7 +203,7 @@ def compute_pos(l_idx,box_NMS,conf_NMS,boxes_default):
         #box_maxx = gx+gw/2
         box_miny = gy-gh/2
         #box_maxy = gy+gh/2 
-    l_pos.append([c_id,box_minx,box_miny,gw,gh])
+        l_pos.append([c_id,box_minx,box_miny,gw,gh])
     return l_pos
 
     
