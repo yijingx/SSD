@@ -7,7 +7,7 @@ from dataset import iou_NMS
 colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
 #use red green blue to represent different classes
 
-def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_box, image_, boxs_default,epoch = 500,save=False):
+def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_box, image_, boxs_default,epoch = 500,save=False,threshold=0.5):
     #input:
     #windowname      -- the name of the window to display the images
     #pred_confidence -- the predicted class labels from SSD, [num_of_boxes, num_of_classes]
@@ -39,7 +39,7 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     #draw ground truth
     for i in range(len(ann_confidence)):
         for j in range(class_num):
-            if ann_confidence[i,j]>0.5: #if the network/ground_truth has high confidence on cell[i] with class[j]
+            if ann_confidence[i,j]>threshold: #if the network/ground_truth has high confidence on cell[i] with class[j]
                 #TODO:
                 #image1: draw ground truth bounding boxes on image1
                 #image2: draw ground truth "default" boxes on image2 (to show that you have assigned the object to the correct cell/cells)
@@ -79,7 +79,7 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     #pred
     for i in range(len(pred_confidence)):
         for j in range(class_num):
-            if pred_confidence[i,j]>0.5:
+            if pred_confidence[i,j]>threshold:
                 #TODO:
                 #image3: draw network-predicted bounding boxes on image3
                 #image4: draw network-predicted "default" boxes on image4 (to show which cell does your network think that contains an object)
@@ -147,16 +147,16 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.3, thresh
     #you can also directly return the final bounding boxes and classes, and write a new visualization function for that.
     l_box = np.zeros_like(confidence_)
     l_conf = np.zeros_like(confidence_)
+    NMS_idx = []
     N = len(confidence_)
     highest_conf = np.amax(confidence_[:,0:2],axis = 1) #[num_of_boxes,1],[num_of_boxes,1]
     highest_conf_ofall = np.max(highest_conf) 
     highest_idx = np.argmax(highest_conf)
     while highest_conf_ofall>threshold:
         #add to new list(box)
-        #l_box.append(box_[highest_idx])
-        #l_conf.append(confidence_[highest_idx].copy())
         l_box[highest_idx] = box_[highest_idx]
         l_conf[highest_idx] = confidence_[highest_idx]
+        NMS_idx.append(highest_idx)
         confidence_[highest_idx] = [0,0,0,0]
         ious =  iou_NMS(box_, highest_idx,boxs_default)
         l_idx = (ious>overlap).squeeze().nonzero()
@@ -168,9 +168,45 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.3, thresh
     box_NMS = box_NMS.reshape((-1,4))
     conf_NMS = np.array(l_conf)
     conf_NMS = conf_NMS.reshape((-1,4))
-    return conf_NMS, box_NMS
+    ls_pos = compute_pos(NMS_idx,box_NMS,conf_NMS,boxs_default)
+    return conf_NMS, box_NMS, ls_pos
 
     #TODO: non maximum suppression
+
+def compute_pos(l_idx,box_NMS,conf_NMS,boxes_default):
+    l_pos = []
+    c_id,box_minx,box_miny,gw,gh=0,0,0,0,0
+    #transform parameter px,py,pw,ph
+    for i in range(len(l_idx)):
+        idx = l_idx[i]
+        c_id = np.argmax(conf_NMS[idx,0:2])
+        px_min = boxes_default[idx,4]
+        py_min = boxes_default[idx,5]
+        px_max = boxes_default[idx,6]
+        py_max = boxes_default[idx,7]
+        px = (px_min+px_max)/2
+        py = (py_min+py_max)/2
+        pw = px_max-px_min
+        ph = py_max-py_min
+        #transform parameter px,py,pw,ph (end)
+        #extract max,min position of boxs_
+        tx = box_NMS[idx,0] #center x
+        ty = box_NMS[idx,1]
+        tw = box_NMS[idx,2] #center y
+        th = box_NMS[idx,3]
+        gx = pw*tx+px
+        gy = py*ty+py
+        gw = pw*np.exp(tw)
+        gh = ph*np.exp(th)
+        box_minx = gx-gw/2
+        #box_maxx = gx+gw/2
+        box_miny = gy-gh/2
+        #box_maxy = gy+gh/2 
+    l_pos.append([c_id,box_minx,box_miny,gw,gh])
+    return l_pos
+
+    
+
     
 
 

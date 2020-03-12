@@ -184,7 +184,7 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
 
 
 class COCO(torch.utils.data.Dataset):
-    def __init__(self, imgdir, anndir, class_num, boxs_default, train = True, image_size=320):
+    def __init__(self, imgdir, anndir, class_num, boxs_default, train = True, image_size=320,wholedataset=False):
         self.train = train
         self.imgdir = imgdir
         
@@ -198,14 +198,19 @@ class COCO(torch.utils.data.Dataset):
         
         self.img_names = os.listdir(self.imgdir)
         self.image_size = image_size
+
+        self.wholedataset = wholedataset
         
         #notice:
         #you can split the dataset into 80% training and 20% testing here, by slicing self.img_names with respect to self.train
-        offset = int(len(self.img_names)*0.8)
-        if self.train:
-            self.img_names = self.img_names[:offset]
+        if self.wholedataset==True:
+            pass
         else:
-            self.img_names = self.img_names[offset:]
+            offset = int(len(self.img_names)*0.8)
+            if self.train:
+                self.img_names = self.img_names[:offset]
+            else:
+                self.img_names = self.img_names[offset:]
 
     def __len__(self):
         return len(self.img_names)
@@ -267,6 +272,8 @@ class COCO(torch.utils.data.Dataset):
         
         #note: please make sure x_min,y_min,x_max,y_max are normalized with respect to the width or height of the image.
         #For example, point (x=100, y=200) in a image with (width=1000, height=500) will be normalized to (x/width=0.1,y/height=0.4)            
+        if self.wholedataset:
+            return image, ann_box, ann_confidence,x_shape,y_shape
         return image, ann_box, ann_confidence
 
 class Aug(torch.utils.data.Dataset):
