@@ -197,6 +197,7 @@ class COCO(torch.utils.data.Dataset):
         self.box_num = len(self.boxs_default)
         
         self.img_names = os.listdir(self.imgdir)
+        self.img_names.sort()
         self.image_size = image_size
 
         self.wholedataset = wholedataset
