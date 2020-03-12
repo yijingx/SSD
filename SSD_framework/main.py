@@ -152,7 +152,7 @@ else:
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=16, shuffle=False, num_workers=0)
     dataset_test = COCO("data/test/images/", "data/test/annotations/", class_num, boxs_default, train = False, image_size=320,wholedataset=True)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=16, shuffle=False, num_workers=0)
-    #txt_id = 0
+    
     for i, data in enumerate(dataloader, 0):
         images_, ann_box_, ann_confidence_,x_shape,y_shape = data
         images = images_.cuda()
@@ -183,6 +183,39 @@ else:
 
             #TODO: save predicted bounding boxes and classes to a txt file.
             #you will need to submit those files for grading this assignment
-            visualize_pred("test", pred_confidence_NMS, pred_box_NMS, pred_confidence_, pred_box_, images_[j].numpy(), boxs_default,threshold=0.5)
-            cv2.waitKey(1000)
+            #visualize_pred("test", pred_confidence_NMS, pred_box_NMS, pred_confidence_, pred_box_, images_[j].numpy(), boxs_default,threshold=0.5)
+            #cv2.waitKey(1000)
+
+    # for i, data in enumerate(dataloader_test, 0):
+    #     images_,x_shape,y_shape = data
+    #     images = images_.cuda()
+    #     #ann_box = ann_box_.cuda()
+    #     #ann_confidence = ann_confidence_.cuda()
+
+    #     pred_confidence, pred_box = network(images)
+    #     for j in range(16):
+    #         pred_confidence_ = pred_confidence[j].detach().cpu().numpy()
+    #         pred_box_ = pred_box[j].detach().cpu().numpy()
+    #         x_shape_ = int(x_shape[j])
+    #         y_shape_ = int(y_shape[j])
+    #         #visualize_pred("test",  pred_confidence_, pred_box_, pred_confidence_, pred_box_, images_[j].numpy(), boxs_default,threshold=0.3)
+
+    #         pred_confidence_NMS,pred_box_NMS,ls_pos = non_maximum_suppression(pred_confidence_.copy(),pred_box_.copy(),boxs_default,threshold=0.5)
+            
+
+    #         txt_id = str(int(i)*16+j)
+    #         s = txt_id.zfill(5)
+    #         ann_name = "predicted_boxes/test/"+s+".txt"
+    #         f = open(ann_name,"w")
+    #         for line in ls_pos:
+    #             line_ = str(line[0])+" "+str(round(line[1]*x_shape_,2))+" "+str(round(line[2]*y_shape_,2))+" "+str(round(line[3]*x_shape_,2))+' '+str(round(line[4]*y_shape_,2))
+    #             f.write(line_)
+    #             f.write("\n")
+    #             print(s,line_)
+    #         f.close()
+
+    #         #TODO: save predicted bounding boxes and classes to a txt file.
+    #         #you will need to submit those files for grading this assignment
+    #         #visualize_pred("test", pred_confidence_NMS, pred_box_NMS, pred_confidence_, pred_box_, images_[j].numpy(), boxs_default,threshold=0.5)
+    #         #cv2.waitKey(1000)
 

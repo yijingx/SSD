@@ -243,7 +243,7 @@ class COCO(torch.utils.data.Dataset):
         x_scale = 320/x_shape
         y_scale = 320/y_shape
         if self.anndir == "data/test/annotations/":
-            return image
+            return image,x_shape,y_shape
         #2. prepare ann_box and ann_confidence, by reading txt file "ann_name" first.
 
         anno_txt = open(ann_name)
