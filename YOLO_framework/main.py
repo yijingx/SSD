@@ -49,9 +49,9 @@ if not args.test:
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=True, num_workers=0)
 
     #test visualize
-    for i, data in enumerate(dataloader, 0):
+    """ for i, data in enumerate(dataloader, 0):
         images_, ann_box_, ann_confidence_ = data
-        #visualize_pred("test", ann_confidence_[0].numpy(), ann_box_[0].numpy(), ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy())
+        visualize_pred("test", ann_confidence_[0].numpy(), ann_box_[0].numpy(), ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy()) """
     
     optimizer = optim.Adam(network.parameters(), lr = 1e-4)
     #feel free to try other optimizers and parameters.
